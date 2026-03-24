@@ -57,7 +57,7 @@ runs:
   steps:
     - name: Setup Go
       if: ${{ inputs.tool == 'ghalint' || inputs.tool == 'actionlint' }}
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version: "1.24"
 
@@ -75,7 +75,7 @@ runs:
 
     - name: Setup reviewdog for actionlint
       if: ${{ inputs.tool == 'actionlint' }}
-      uses: reviewdog/action-setup@v1
+      uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f # v1.5.0
       with:
         reviewdog_version: ${{ inputs.reviewdog_version }}
 
