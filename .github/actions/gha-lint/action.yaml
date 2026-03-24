@@ -1,3 +1,4 @@
+---
 name: gha-lint
 description: Run GitHub Actions linters and report findings
 
