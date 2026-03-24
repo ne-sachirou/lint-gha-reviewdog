@@ -1,0 +1,257 @@
+name: gha-lint
+description: Run GitHub Actions linters and report findings
+
+inputs:
+  tool:
+    description: Linter to run
+    required: true
+  reporter:
+    description: reviewdog reporter
+    required: false
+    default: github-pr-review
+  filter_mode:
+    description: reviewdog filter mode
+    required: false
+    default: added
+  workdir:
+    description: Directory to lint
+    required: false
+    default: .
+  fail_on_error:
+    description: Fail the step when findings exist
+    required: false
+    default: "true"
+  use_aqua:
+    description: Reserved for future aqua-based installation
+    required: false
+    default: "false"
+  github_token:
+    description: GitHub token for reviewdog
+    required: false
+    default: ""
+  actionlint_version:
+    description: actionlint version
+    required: false
+    default: v1.7.8
+  reviewdog_version:
+    description: reviewdog version
+    required: false
+    default: v0.21.0
+  zizmor_version:
+    description: zizmor container image tag
+    required: false
+    default: v1.13.0
+  ghalint_version:
+    description: ghalint version
+    required: false
+    default: v1.2.3
+
+outputs:
+  has_findings:
+    description: Whether the tool reported findings
+    value: ${{ steps.result.outputs.has_findings }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      if: ${{ inputs.tool == 'ghalint' || inputs.tool == 'actionlint' }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.24"
+
+    - name: Install ghalint
+      if: ${{ inputs.tool == 'ghalint' }}
+      shell: bash
+      env:
+        GHALINT_VERSION: ${{ inputs.ghalint_version }}
+      run: |
+        set -euo pipefail
+        GOBIN="${RUNNER_TEMP}/gha-lint-bin"
+        mkdir -p "${GOBIN}"
+        echo "${GOBIN}" >> "${GITHUB_PATH}"
+        GO111MODULE=on GOBIN="${GOBIN}" go install "github.com/suzuki-shunsuke/ghalint/cmd/ghalint@${GHALINT_VERSION}"
+
+    - name: Setup reviewdog for actionlint
+      if: ${{ inputs.tool == 'actionlint' }}
+      uses: reviewdog/action-setup@v1
+      with:
+        reviewdog_version: ${{ inputs.reviewdog_version }}
+
+    - name: Install actionlint
+      if: ${{ inputs.tool == 'actionlint' }}
+      shell: bash
+      env:
+        ACTIONLINT_VERSION: ${{ inputs.actionlint_version }}
+      run: |
+        set -euo pipefail
+        GOBIN="${RUNNER_TEMP}/gha-lint-bin"
+        mkdir -p "${GOBIN}"
+        echo "${GOBIN}" >> "${GITHUB_PATH}"
+        GO111MODULE=on GOBIN="${GOBIN}" go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
+
+    - id: run_actionlint
+      name: Run actionlint with reviewdog
+      if: ${{ inputs.tool == 'actionlint' }}
+      shell: bash
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ inputs.github_token }}
+        REPORTER: ${{ inputs.reporter }}
+        FILTER_MODE: ${{ inputs.filter_mode }}
+        WORKDIR: ${{ inputs.workdir }}
+        FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+      run: |
+        set -euo pipefail
+        status=0
+        tmp_log="$(mktemp)"
+        actual_reporter="${REPORTER}"
+        if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
+          actual_reporter="github-check"
+        fi
+        if (
+          cd "${GITHUB_WORKSPACE}/${WORKDIR}"
+          actionlint -color=false -oneline . 2>&1
+        ) | tee "${tmp_log}" | reviewdog \
+          -f=actionlint \
+          -name="actionlint" \
+          -reporter="${actual_reporter}" \
+          -filter-mode="${FILTER_MODE}" \
+          -fail-level=none; then
+          status=0
+        else
+          status=$?
+        fi
+
+        if [ -s "${tmp_log}" ]; then
+          findings=true
+        else
+          findings=false
+        fi
+
+        /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
+          "actionlint" \
+          "${findings}" \
+          "actionlint -color=false -oneline ." \
+          "${tmp_log}"
+
+        {
+          echo "has_findings=${findings}"
+          echo "lint_exit_code=${status}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - id: run_zizmor
+      name: Run zizmor
+      if: ${{ inputs.tool == 'zizmor' }}
+      shell: bash
+      env:
+        WORKDIR: ${{ inputs.workdir }}
+        ZIZMOR_VERSION: ${{ inputs.zizmor_version }}
+      run: |
+        set -euo pipefail
+        status=0
+        tmp_log="$(mktemp)"
+        if docker run --rm \
+          -v "${GITHUB_WORKSPACE}/${WORKDIR}:/workdir" \
+          ghcr.io/zizmorcore/zizmor:"${ZIZMOR_VERSION}" \
+          /workdir >"${tmp_log}" 2>&1; then
+          status=0
+        else
+          status=$?
+        fi
+
+        findings=false
+        if [ "${status}" -ne 0 ] || [ -s "${tmp_log}" ]; then
+          findings=true
+        fi
+
+        /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
+          "zizmor" \
+          "${findings}" \
+          "docker run --rm -v <workspace>:/workdir ghcr.io/zizmorcore/zizmor:${ZIZMOR_VERSION} /workdir" \
+          "${tmp_log}"
+
+        {
+          echo "has_findings=${findings}"
+          echo "lint_exit_code=${status}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - id: run_ghalint
+      name: Run ghalint
+      if: ${{ inputs.tool == 'ghalint' }}
+      shell: bash
+      env:
+        WORKDIR: ${{ inputs.workdir }}
+      run: |
+        set -euo pipefail
+        status=0
+        tmp_log="$(mktemp)"
+        if (
+          cd "${GITHUB_WORKSPACE}/${WORKDIR}"
+          ghalint run
+        ) >"${tmp_log}" 2>&1; then
+          status=0
+        else
+          status=$?
+        fi
+
+        findings=false
+        if [ "${status}" -ne 0 ] || [ -s "${tmp_log}" ]; then
+          findings=true
+        fi
+
+        /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
+          "ghalint" \
+          "${findings}" \
+          "ghalint run" \
+          "${tmp_log}"
+
+        {
+          echo "has_findings=${findings}"
+          echo "lint_exit_code=${status}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - id: result
+      name: Finalize result
+      shell: bash
+      env:
+        TOOL: ${{ inputs.tool }}
+        FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+        ACTIONLINT_FINDINGS: ${{ steps.run_actionlint.outputs.has_findings }}
+        ACTIONLINT_EXIT_CODE: ${{ steps.run_actionlint.outputs.lint_exit_code }}
+        ZIZMOR_FINDINGS: ${{ steps.run_zizmor.outputs.has_findings }}
+        ZIZMOR_EXIT_CODE: ${{ steps.run_zizmor.outputs.lint_exit_code }}
+        GHALINT_FINDINGS: ${{ steps.run_ghalint.outputs.has_findings }}
+        GHALINT_EXIT_CODE: ${{ steps.run_ghalint.outputs.lint_exit_code }}
+      run: |
+        set -euo pipefail
+        findings=false
+        exit_code=0
+
+        case "${TOOL}" in
+          actionlint)
+            findings="${ACTIONLINT_FINDINGS:-false}"
+            exit_code="${ACTIONLINT_EXIT_CODE:-0}"
+            ;;
+          zizmor)
+            findings="${ZIZMOR_FINDINGS:-false}"
+            exit_code="${ZIZMOR_EXIT_CODE:-0}"
+            ;;
+          ghalint)
+            findings="${GHALINT_FINDINGS:-false}"
+            exit_code="${GHALINT_EXIT_CODE:-0}"
+            ;;
+          *)
+            echo "Unsupported tool: ${TOOL}" >&2
+            exit 1
+            ;;
+        esac
+
+        echo "has_findings=${findings}" >> "${GITHUB_OUTPUT}"
+
+        if [ "${FAIL_ON_ERROR}" = "true" ] && [ "${findings}" = "true" ]; then
+          exit 1
+        fi
+
+        if [ "${exit_code}" -ne 0 ] && [ "${findings}" != "true" ]; then
+          exit "${exit_code}"
+        fi

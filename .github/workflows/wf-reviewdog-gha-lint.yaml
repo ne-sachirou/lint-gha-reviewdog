@@ -1,0 +1,205 @@
+name: reusable gha lint
+
+"on":
+  workflow_call:
+    inputs:
+      toolset:
+        description: all, actionlint, zizmor, or ghalint
+        required: false
+        type: string
+        default: all
+      reporter:
+        description: reviewdog reporter
+        required: false
+        type: string
+        default: github-pr-review
+      filter_mode:
+        description: reviewdog filter mode
+        required: false
+        type: string
+        default: added
+      workdir:
+        description: Directory to lint
+        required: false
+        type: string
+        default: .
+      fail_on_error:
+        description: Fail jobs when findings exist
+        required: false
+        type: boolean
+        default: true
+      use_aqua:
+        description: Reserved for future aqua-based installation
+        required: false
+        type: boolean
+        default: false
+      actionlint_version:
+        description: actionlint version
+        required: false
+        type: string
+        default: v1.7.8
+      zizmor_version:
+        description: zizmor version
+        required: false
+        type: string
+        default: v1.13.0
+      ghalint_version:
+        description: ghalint version
+        required: false
+        type: string
+        default: v1.2.3
+      reviewdog_version:
+        description: reviewdog version
+        required: false
+        type: string
+        default: v0.21.0
+    secrets:
+      github_token:
+        required: false
+    outputs:
+      has_findings:
+        description: Whether any enabled tool reported findings
+        value: ${{ jobs.aggregate.outputs.has_findings }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      action_repository: ${{ steps.resolve.outputs.action_repository }}
+      action_ref: ${{ steps.resolve.outputs.action_ref }}
+    steps:
+      - id: resolve
+        shell: bash
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          action_repository="${WORKFLOW_REF%%/.github/workflows/*}"
+          action_ref="${WORKFLOW_REF##*@}"
+          {
+            echo "action_repository=${action_repository}"
+            echo "action_ref=${action_ref}"
+          } >> "${GITHUB_OUTPUT}"
+
+  actionlint:
+    if: ${{ inputs.toolset == 'all' || inputs.toolset == 'actionlint' }}
+    runs-on: ubuntu-latest
+    needs: setup
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    outputs:
+      has_findings: ${{ steps.lint.outputs.has_findings }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.setup.outputs.action_repository }}
+          ref: ${{ needs.setup.outputs.action_ref }}
+          path: .gha-lint-action
+          persist-credentials: false
+
+      - id: lint
+        uses: ./.gha-lint-action/.github/actions/gha-lint
+        with:
+          tool: actionlint
+          reporter: ${{ inputs.reporter }}
+          filter_mode: ${{ inputs.filter_mode }}
+          workdir: ${{ inputs.workdir }}
+          fail_on_error: ${{ inputs.fail_on_error }}
+          use_aqua: ${{ inputs.use_aqua }}
+          github_token: ${{ secrets.github_token || github.token }}
+          actionlint_version: ${{ inputs.actionlint_version }}
+          reviewdog_version: ${{ inputs.reviewdog_version }}
+
+  zizmor:
+    if: ${{ inputs.toolset == 'all' || inputs.toolset == 'zizmor' }}
+    runs-on: ubuntu-latest
+    needs: setup
+    permissions:
+      contents: read
+    outputs:
+      has_findings: ${{ steps.lint.outputs.has_findings }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.setup.outputs.action_repository }}
+          ref: ${{ needs.setup.outputs.action_ref }}
+          path: .gha-lint-action
+          persist-credentials: false
+
+      - id: lint
+        uses: ./.gha-lint-action/.github/actions/gha-lint
+        with:
+          tool: zizmor
+          workdir: ${{ inputs.workdir }}
+          fail_on_error: ${{ inputs.fail_on_error }}
+          use_aqua: ${{ inputs.use_aqua }}
+          github_token: ${{ secrets.github_token || github.token }}
+          zizmor_version: ${{ inputs.zizmor_version }}
+
+  ghalint:
+    if: ${{ inputs.toolset == 'all' || inputs.toolset == 'ghalint' }}
+    runs-on: ubuntu-latest
+    needs: setup
+    permissions:
+      contents: read
+    outputs:
+      has_findings: ${{ steps.lint.outputs.has_findings }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.setup.outputs.action_repository }}
+          ref: ${{ needs.setup.outputs.action_ref }}
+          path: .gha-lint-action
+          persist-credentials: false
+
+      - id: lint
+        uses: ./.gha-lint-action/.github/actions/gha-lint
+        with:
+          tool: ghalint
+          workdir: ${{ inputs.workdir }}
+          fail_on_error: ${{ inputs.fail_on_error }}
+          use_aqua: ${{ inputs.use_aqua }}
+          github_token: ${{ secrets.github_token || github.token }}
+          ghalint_version: ${{ inputs.ghalint_version }}
+
+  aggregate:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+      - actionlint
+      - zizmor
+      - ghalint
+    outputs:
+      has_findings: ${{ steps.collect.outputs.has_findings }}
+    steps:
+      - id: collect
+        shell: bash
+        env:
+          ACTIONLINT_RESULT: ${{ needs.actionlint.outputs.has_findings }}
+          ZIZMOR_RESULT: ${{ needs.zizmor.outputs.has_findings }}
+          GHALINT_RESULT: ${{ needs.ghalint.outputs.has_findings }}
+        run: |
+          set -euo pipefail
+          has_findings=false
+          for result in "${ACTIONLINT_RESULT:-}" "${ZIZMOR_RESULT:-}" "${GHALINT_RESULT:-}"; do
+            if [ "${result}" = "true" ]; then
+              has_findings=true
+              break
+            fi
+          done
+          echo "has_findings=${has_findings}" >> "${GITHUB_OUTPUT}"
