@@ -61,7 +61,8 @@ runs:
       with:
         go-version: "1.24"
 
-    - name: Install ghalint
+    - id: install_ghalint
+      name: Install ghalint
       if: ${{ inputs.tool == 'ghalint' }}
       shell: bash
       env:
@@ -70,8 +71,8 @@ runs:
         set -euo pipefail
         GOBIN="${RUNNER_TEMP}/gha-lint-bin"
         mkdir -p "${GOBIN}"
-        echo "${GOBIN}" >> "${GITHUB_PATH}"
         GO111MODULE=on GOBIN="${GOBIN}" go install "github.com/suzuki-shunsuke/ghalint/cmd/ghalint@${GHALINT_VERSION}"
+        echo "binary=${GOBIN}/ghalint" >> "${GITHUB_OUTPUT}"
 
     - name: Setup reviewdog for actionlint
       if: ${{ inputs.tool == 'actionlint' }}
@@ -79,7 +80,8 @@ runs:
       with:
         reviewdog_version: ${{ inputs.reviewdog_version }}
 
-    - name: Install actionlint
+    - id: install_actionlint
+      name: Install actionlint
       if: ${{ inputs.tool == 'actionlint' }}
       shell: bash
       env:
@@ -88,8 +90,8 @@ runs:
         set -euo pipefail
         GOBIN="${RUNNER_TEMP}/gha-lint-bin"
         mkdir -p "${GOBIN}"
-        echo "${GOBIN}" >> "${GITHUB_PATH}"
         GO111MODULE=on GOBIN="${GOBIN}" go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
+        echo "binary=${GOBIN}/actionlint" >> "${GITHUB_OUTPUT}"
 
     - id: run_actionlint
       name: Run actionlint with reviewdog
@@ -101,6 +103,7 @@ runs:
         FILTER_MODE: ${{ inputs.filter_mode }}
         WORKDIR: ${{ inputs.workdir }}
         FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+        ACTIONLINT_BIN: ${{ steps.install_actionlint.outputs.binary }}
       run: |
         set -euo pipefail
         status=0
@@ -111,7 +114,7 @@ runs:
         fi
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          actionlint -color=false -oneline . 2>&1
+          "${ACTIONLINT_BIN}" -color=false -oneline . 2>&1
         ) | tee "${tmp_log}" | reviewdog \
           -f=actionlint \
           -name="actionlint" \
@@ -182,13 +185,14 @@ runs:
       shell: bash
       env:
         WORKDIR: ${{ inputs.workdir }}
+        GHALINT_BIN: ${{ steps.install_ghalint.outputs.binary }}
       run: |
         set -euo pipefail
         status=0
         tmp_log="$(mktemp)"
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          ghalint run
+          "${GHALINT_BIN}" run
         ) >"${tmp_log}" 2>&1; then
           status=0
         else
