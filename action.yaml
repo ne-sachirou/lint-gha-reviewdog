@@ -82,7 +82,7 @@ runs:
         fi
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- actionlint -color=false -oneline
+          aqua exec -- actionlint -no-color -oneline
         ) >"${tmp_stdout}" 2>"${tmp_stderr}"; then
           actionlint_status=0
         else
@@ -109,7 +109,7 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "actionlint" \
           "${findings}" \
-          "aqua exec -- actionlint -color=false -oneline | aqua exec -- reviewdog ..." \
+          "aqua exec -- actionlint -no-color -oneline | aqua exec -- reviewdog ..." \
           "${tmp_log}"
 
         {
@@ -132,7 +132,7 @@ runs:
         tmp_log="$(mktemp)"
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- zizmor .
+          aqua exec -- zizmor --color never --render-links never --no-progress .
         ) >"${tmp_log}" 2>&1; then
           status=0
         else
@@ -146,7 +146,7 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "zizmor" \
           "${findings}" \
-          "aqua exec -- zizmor ." \
+          "aqua exec -- zizmor --color never --render-links never --no-progress ." \
           "${tmp_log}"
 
         {
@@ -168,7 +168,7 @@ runs:
         tmp_log="$(mktemp)"
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- ghalint run
+          aqua exec -- ghalint --log-color never run
         ) >"${tmp_log}" 2>&1; then
           status=0
         else
@@ -182,7 +182,7 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "ghalint" \
           "${findings}" \
-          "aqua exec -- ghalint run" \
+          "aqua exec -- ghalint --log-color never run" \
           "${tmp_log}"
 
         {

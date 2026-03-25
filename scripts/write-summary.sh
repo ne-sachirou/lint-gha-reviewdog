@@ -7,6 +7,10 @@ has_findings="$2"
 command_line="$3"
 log_file="$4"
 
+strip_ansi() {
+  perl -pe 's/\e\[[0-9;?]*[ -\/]*[@-~]//g; s/\e\][^\a]*(?:\a|\e\\)//g'
+}
+
 {
   echo "### ${tool_name}"
   echo
@@ -17,7 +21,7 @@ log_file="$4"
     echo "<details><summary>raw output</summary>"
     echo
     echo '```text'
-    sed -n '1,200p' "${log_file}"
+    sed -n '1,200p' "${log_file}" | strip_ansi
     echo '```'
     echo "</details>"
   else
