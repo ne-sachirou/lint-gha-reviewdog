@@ -12,10 +12,8 @@ This repository provides a step-level composite action as the public entry point
 ## Current behavior
 
 - `actionlint` posts findings through `reviewdog`
-- `zizmor` runs as CI and writes results to the job summary
-- `ghalint` runs as CI and writes results to the job summary
-
-`zizmor` and `ghalint` do not currently emit `reviewdog` comments. They fail the job when findings are detected.
+- `zizmor` posts findings through `reviewdog` and writes results to the job summary
+- `ghalint` posts findings through `reviewdog` and writes results to the job summary
 
 ## Usage
 
@@ -64,9 +62,9 @@ If you only need one tool, set `toolset` to `actionlint`, `zizmor`, or `ghalint`
 | Name            | Default            | Description                                                                           |
 | --------------- | ------------------ | ------------------------------------------------------------------------------------- |
 | `fail_on_error` | `true`             | Fail the step when findings are detected.                                             |
-| `filter_mode`   | `added`            | `reviewdog` filter mode used by `actionlint`.                                         |
+| `filter_mode`   | `added`            | `reviewdog` filter mode used by all enabled tools.                                    |
 | `github_token`  | `""`               | GitHub token used by `reviewdog`. Pass `${{ github.token }}` in the calling workflow. |
-| `reporter`      | `github-pr-review` | `reviewdog` reporter used by `actionlint`.                                            |
+| `reporter`      | `github-pr-review` | `reviewdog` reporter used by all enabled tools.                                       |
 | `toolset`       | `all`              | Which tools to run. Supported values: `all`, `actionlint`, `zizmor`, `ghalint`.       |
 | `workdir`       | `.`                | Directory to lint.                                                                    |
 
@@ -92,8 +90,8 @@ Notes:
 ## Failure model
 
 - If `fail_on_error` is `true`, any finding fails the action step
-- `actionlint` findings are reported through `reviewdog`
-- `zizmor` and `ghalint` findings are shown in the step summary
+- `actionlint`, `zizmor`, and `ghalint` findings are reported through `reviewdog`
+- `actionlint`, `zizmor`, and `ghalint` findings are also shown in the step summary
 - the root action exposes a combined `has_findings` output
 
 ## Tool installation
@@ -109,6 +107,7 @@ Tools are pinned in [`/aqua.yaml`](./aqua.yaml) and installed through `aquaproj/
 aqua.yaml
 action.yaml
 scripts/
+  convert-to-rdjson.py
   write-summary.sh
 ```
 

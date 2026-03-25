@@ -124,12 +124,21 @@ runs:
       shell: bash
       env:
         AQUA_CONFIG: ${{ github.action_path }}/aqua.yaml
+        FILTER_MODE: ${{ inputs.filter_mode }}
+        REPORTER: ${{ inputs.reporter }}
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ inputs.github_token }}
         WORKDIR: ${{ inputs.workdir }}
       run: |
         set -euo pipefail
         status=0
+        reviewdog_status=0
         findings=false
         tmp_log="$(mktemp)"
+        tmp_report="$(mktemp)"
+        actual_reporter="${REPORTER}"
+        if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
+          actual_reporter="github-check"
+        fi
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
           aqua exec -- zizmor --color never --render-links never --no-progress .
@@ -141,6 +150,23 @@ runs:
 
         if [ "${status}" -ge 11 ] && [ "${status}" -le 14 ]; then
           findings=true
+          python3 "${GITHUB_ACTION_PATH}/scripts/convert-to-rdjson.py" \
+            zizmor \
+            "${tmp_log}" \
+            > "${tmp_report}"
+          if [ -s "${tmp_report}" ]; then
+            if aqua exec -- reviewdog \
+              -f=rdjson \
+              -name="zizmor" \
+              -reporter="${actual_reporter}" \
+              -filter-mode="${FILTER_MODE}" \
+              -fail-level=none \
+              < "${tmp_report}"; then
+              reviewdog_status=0
+            else
+              reviewdog_status=$?
+            fi
+          fi
         fi
 
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
@@ -152,6 +178,7 @@ runs:
         {
           echo "has_findings=${findings}"
           echo "lint_exit_code=${status}"
+          echo "report_exit_code=${reviewdog_status}"
         } >> "${GITHUB_OUTPUT}"
 
     - id: run_ghalint
@@ -160,12 +187,21 @@ runs:
       shell: bash
       env:
         AQUA_CONFIG: ${{ github.action_path }}/aqua.yaml
+        FILTER_MODE: ${{ inputs.filter_mode }}
+        REPORTER: ${{ inputs.reporter }}
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ inputs.github_token }}
         WORKDIR: ${{ inputs.workdir }}
       run: |
         set -euo pipefail
         status=0
+        reviewdog_status=0
         findings=false
         tmp_log="$(mktemp)"
+        tmp_report="$(mktemp)"
+        actual_reporter="${REPORTER}"
+        if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
+          actual_reporter="github-check"
+        fi
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
           aqua exec -- ghalint --log-color never run
@@ -177,6 +213,24 @@ runs:
 
         if [ "${status}" -ne 0 ]; then
           findings=true
+          python3 "${GITHUB_ACTION_PATH}/scripts/convert-to-rdjson.py" \
+            ghalint \
+            "${tmp_log}" \
+            "${GITHUB_WORKSPACE}/${WORKDIR}" \
+            > "${tmp_report}"
+          if [ -s "${tmp_report}" ]; then
+            if aqua exec -- reviewdog \
+              -f=rdjson \
+              -name="ghalint" \
+              -reporter="${actual_reporter}" \
+              -filter-mode="${FILTER_MODE}" \
+              -fail-level=none \
+              < "${tmp_report}"; then
+              reviewdog_status=0
+            else
+              reviewdog_status=$?
+            fi
+          fi
         fi
 
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
@@ -188,6 +242,7 @@ runs:
         {
           echo "has_findings=${findings}"
           echo "lint_exit_code=${status}"
+          echo "report_exit_code=${reviewdog_status}"
         } >> "${GITHUB_OUTPUT}"
 
     - id: result
@@ -200,9 +255,11 @@ runs:
         FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
         GHALINT_EXIT_CODE: ${{ steps.run_ghalint.outputs.lint_exit_code }}
         GHALINT_FINDINGS: ${{ steps.run_ghalint.outputs.has_findings }}
+        GHALINT_REPORT_EXIT_CODE: ${{ steps.run_ghalint.outputs.report_exit_code }}
         TOOLSET: ${{ inputs.toolset }}
         ZIZMOR_EXIT_CODE: ${{ steps.run_zizmor.outputs.lint_exit_code }}
         ZIZMOR_FINDINGS: ${{ steps.run_zizmor.outputs.has_findings }}
+        ZIZMOR_REPORT_EXIT_CODE: ${{ steps.run_zizmor.outputs.report_exit_code }}
       run: |
         set -euo pipefail
         has_findings=false
@@ -220,6 +277,12 @@ runs:
 
         if [ "${ACTIONLINT_REPORT_EXIT_CODE:-0}" -ne 0 ]; then
           unexpected_exit_code="${ACTIONLINT_REPORT_EXIT_CODE}"
+        fi
+        if [ "${ZIZMOR_REPORT_EXIT_CODE:-0}" -ne 0 ]; then
+          unexpected_exit_code="${ZIZMOR_REPORT_EXIT_CODE}"
+        fi
+        if [ "${GHALINT_REPORT_EXIT_CODE:-0}" -ne 0 ]; then
+          unexpected_exit_code="${GHALINT_REPORT_EXIT_CODE}"
         fi
 
         for result in \

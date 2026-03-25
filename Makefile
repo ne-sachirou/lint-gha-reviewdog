@@ -7,18 +7,20 @@ help:
 format: ## Format
 	pinact run
 	npx prettier -w .
+	black .
 
 lint: lint-gha lint-renovate ## Lint
 	npx prettier -c .
 	yamllint .
+	shellcheck scripts/*.sh
+	flake8
 
 lint-gha:
-	npx prettier -c .github/
-	yamllint .github/
+	npx prettier -c .github/workflows
+	yamllint .github/workflows
 	actionlint
 	zizmor .
 	ghalint run
-	shellcheck scripts/*.sh
 
 lint-renovate:
 	npx --package renovate@latest -- renovate-config-validator --strict
