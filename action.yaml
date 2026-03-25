@@ -141,7 +141,7 @@ runs:
         fi
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- zizmor --color never --render-links never --no-progress .
+          aqua exec -- zizmor --format json --color never --render-links never --no-progress .
         ) >"${tmp_log}" 2>&1; then
           status=0
         else
@@ -172,7 +172,7 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "zizmor" \
           "${findings}" \
-          "aqua exec -- zizmor --color never --render-links never --no-progress ." \
+          "aqua exec -- zizmor --format json --color never --render-links never --no-progress ." \
           "${tmp_log}"
 
         {

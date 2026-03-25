@@ -35,14 +35,16 @@ def normalize_path(path: str) -> str:
 
 def load_payload(path: pathlib.Path) -> Any:
     raw = path.read_text(encoding="utf-8")
-    start = None
-    for marker in ("[", "{"):
-        idx = raw.find(marker)
-        if idx != -1 and (start is None or idx < start):
-            start = idx
-    if start is None:
-        raise ValueError("JSON payload not found")
-    return json.loads(raw[start:])
+    decoder = json.JSONDecoder()
+    starts = [idx for idx, char in enumerate(raw) if char in "[{"]
+    for start in starts:
+        try:
+            payload, _ = decoder.raw_decode(raw[start:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, (list, dict)):
+            return payload
+    raise ValueError("JSON payload not found")
 
 
 def convert_zizmor(path: pathlib.Path) -> dict[str, Any]:
