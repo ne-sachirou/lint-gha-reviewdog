@@ -92,6 +92,35 @@ def convert_zizmor(path: pathlib.Path) -> dict[str, Any]:
     return build_rdjson("zizmor", diagnostics)
 
 
+ACTIONLINT_LINE_RE = re.compile(
+    r"^(?P<path>.+?):(?P<line>\d+):(?P<column>\d+):\s+(?P<message>.+?)(?:\s+\[(?P<code>[^\]]+)\])?$"
+)
+
+
+def convert_actionlint(path: pathlib.Path) -> dict[str, Any]:
+    diagnostics = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = ACTIONLINT_LINE_RE.match(line.strip())
+        if match is None:
+            continue
+        diagnostics.append(
+            {
+                "message": match.group("message"),
+                "severity": "ERROR",
+                "location": make_location(
+                    normalize_path(match.group("path")),
+                    int(match.group("line")),
+                    int(match.group("column")),
+                ),
+                "code": {
+                    "value": match.group("code") or "actionlint",
+                    "url": "",
+                },
+            }
+        )
+    return build_rdjson("actionlint", diagnostics)
+
+
 KEY_VALUE_RE = re.compile(r'(\w+)=(".*?"|\S+)')
 
 
@@ -166,14 +195,16 @@ def convert_ghalint(path: pathlib.Path, workspace: pathlib.Path) -> dict[str, An
 def main() -> int:
     if len(sys.argv) < 3:
         print(
-            "usage: convert-to-rdjson.py <zizmor|ghalint> <input> [workspace]",
+            "usage: convert-to-rdjson.py <actionlint|zizmor|ghalint> <input> [workspace]",
             file=sys.stderr,
         )
         return 2
 
     tool = sys.argv[1]
     input_path = pathlib.Path(sys.argv[2])
-    if tool == "zizmor":
+    if tool == "actionlint":
+        payload = convert_actionlint(input_path)
+    elif tool == "zizmor":
         payload = convert_zizmor(input_path)
     elif tool == "ghalint":
         if len(sys.argv) < 4:

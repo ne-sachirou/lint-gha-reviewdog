@@ -1,0 +1,4 @@
+Mar 25 16:30:10.537 INF download and unarchive the package program=aqua version=2.56.7 exe_name=actionlint package_name=rhysd/actionlint package_version=v1.7.11 registry=standard
+Mar 25 16:30:10.718 INF verify GitHub Artifact Attestations program=aqua version=2.56.7 exe_name=actionlint package_name=rhysd/actionlint package_version=v1.7.11 registry=standard
+Mar 25 16:30:10.718 INF download and unarchive the package program=aqua version=2.56.7 exe_name=actionlint package_name=rhysd/actionlint package_version=v1.7.11 registry=standard package_name=cli/cli package_version=v2.87.2 registry=""
+.github/workflows/dummy-fail-linters.yaml:12:3: job "dummy" needs job "no-such-job" which does not exist in this workflow [job-needs]

@@ -74,5 +74,39 @@ class ConvertZizmorTest(unittest.TestCase):
         )
 
 
+class ConvertActionlintTest(unittest.TestCase):
+    def test_converts_sample_finding_to_rdjson(self) -> None:
+        fixture = (
+            pathlib.Path(__file__).resolve().parent
+            / "fixtures"
+            / "actionlint-log-with-finding.txt"
+        )
+
+        payload = MODULE.convert_actionlint(fixture)
+
+        self.assertEqual(payload["source"]["name"], "actionlint")
+        self.assertEqual(len(payload["diagnostics"]), 1)
+        diagnostic = payload["diagnostics"][0]
+        self.assertEqual(
+            diagnostic["message"],
+            'job "dummy" needs job "no-such-job" which does not exist in this workflow',
+        )
+        self.assertEqual(diagnostic["severity"], "ERROR")
+        self.assertEqual(
+            diagnostic["location"],
+            {
+                "path": ".github/workflows/dummy-fail-linters.yaml",
+                "range": {"start": {"line": 12, "column": 3}},
+            },
+        )
+        self.assertEqual(
+            diagnostic["code"],
+            {
+                "value": "job-needs",
+                "url": "",
+            },
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

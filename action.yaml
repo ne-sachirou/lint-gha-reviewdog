@@ -73,9 +73,8 @@ runs:
         actionlint_status=0
         reviewdog_status=0
         findings=false
-        tmp_stdout="$(mktemp)"
-        tmp_stderr="$(mktemp)"
         tmp_log="$(mktemp)"
+        tmp_report="$(mktemp)"
         actual_reporter="${REPORTER}"
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
           actual_reporter="github-check"
@@ -83,23 +82,37 @@ runs:
         if (
           cd "${GITHUB_WORKSPACE}/${WORKDIR}"
           aqua exec -- actionlint -no-color -oneline
-        ) >"${tmp_stdout}" 2>"${tmp_stderr}"; then
+        ) >"${tmp_log}" 2>&1; then
           actionlint_status=0
         else
           actionlint_status=$?
         fi
 
-        cat "${tmp_stderr}" "${tmp_stdout}" > "${tmp_log}"
+        python3 "${GITHUB_ACTION_PATH}/scripts/convert-to-rdjson.py" \
+          actionlint \
+          "${tmp_log}" \
+          > "${tmp_report}"
 
-        if [ -s "${tmp_stdout}" ]; then
+        if [ -s "${tmp_report}" ]; then
+          detect_actionlint_diagnostics='import json, sys; '
+          detect_actionlint_diagnostics+='payload = json.load(open(sys.argv[1], encoding="utf-8")); '
+          detect_actionlint_diagnostics+='print("1" if payload.get("diagnostics") else "0")'
+          has_actionlint_diagnostics="$(
+            python3 -c "${detect_actionlint_diagnostics}" "${tmp_report}"
+          )"
+        else
+          has_actionlint_diagnostics=0
+        fi
+
+        if [ "${has_actionlint_diagnostics}" = "1" ]; then
           findings=true
           if aqua exec -- reviewdog \
-            -f=actionlint \
+            -f=rdjson \
             -name="actionlint" \
             -reporter="${actual_reporter}" \
             -filter-mode="${FILTER_MODE}" \
             -fail-level=none \
-            < "${tmp_stdout}"; then
+            < "${tmp_report}"; then
             reviewdog_status=0
           else
             reviewdog_status=$?
@@ -109,7 +122,7 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "actionlint" \
           "${findings}" \
-          "aqua exec -- actionlint -no-color -oneline | aqua exec -- reviewdog ..." \
+          "aqua exec -- actionlint -no-color -oneline" \
           "${tmp_log}"
 
         {
