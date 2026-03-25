@@ -6,7 +6,9 @@ help:
 
 format: ## Format
 	pinact run
+	npx prettier -w *.md
 	npx prettier -w .github/
+	npx prettier -w .yamllint.yaml
 
 lint: lint-gha lint-renovate ## Lint
 	yamllint .
