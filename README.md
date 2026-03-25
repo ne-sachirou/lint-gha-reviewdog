@@ -63,12 +63,12 @@ If you only need one tool, set `toolset` to `actionlint`, `zizmor`, or `ghalint`
 
 | Name            | Default            | Description                                                                           |
 | --------------- | ------------------ | ------------------------------------------------------------------------------------- |
-| `toolset`       | `all`              | Which tools to run. Supported values: `all`, `actionlint`, `zizmor`, `ghalint`.       |
-| `reporter`      | `github-pr-review` | `reviewdog` reporter used by `actionlint`.                                            |
-| `filter_mode`   | `added`            | `reviewdog` filter mode used by `actionlint`.                                         |
-| `workdir`       | `.`                | Directory to lint.                                                                    |
 | `fail_on_error` | `true`             | Fail the step when findings are detected.                                             |
+| `filter_mode`   | `added`            | `reviewdog` filter mode used by `actionlint`.                                         |
 | `github_token`  | `""`               | GitHub token used by `reviewdog`. Pass `${{ github.token }}` in the calling workflow. |
+| `reporter`      | `github-pr-review` | `reviewdog` reporter used by `actionlint`.                                            |
+| `toolset`       | `all`              | Which tools to run. Supported values: `all`, `actionlint`, `zizmor`, `ghalint`.       |
+| `workdir`       | `.`                | Directory to lint.                                                                    |
 
 ## Output
 
