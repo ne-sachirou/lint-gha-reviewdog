@@ -4,23 +4,58 @@ name: ci gha lint
 "on":
   pull_request:
     paths:
+      - "action.yaml"
+      - "aqua.yaml"
+      - "scripts/**"
+      - "README.md"
       - ".github/workflows/**"
-      - ".github/actions/**"
   push:
     paths:
+      - "action.yaml"
+      - "aqua.yaml"
+      - "scripts/**"
+      - "README.md"
       - ".github/workflows/**"
-      - ".github/actions/**"
 
 jobs:
-  gha-lint:
+  smoke-all:
     permissions:
       contents: read
       checks: write
       pull-requests: write
-    uses: ./.github/workflows/wf-reviewdog-gha-lint.yaml
-    with:
-      toolset: all
-      reporter: github-pr-review
-      filter_mode: added
-    secrets:
-      github_token: ${{ github.token }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - id: lint
+        uses: ./
+        with:
+          toolset: all
+          reporter: github-pr-review
+          filter_mode: added
+          fail_on_error: false
+          github_token: ${{ github.token }}
+
+  smoke-actionlint:
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - id: lint
+        uses: ./
+        with:
+          toolset: actionlint
+          reporter: github-pr-review
+          filter_mode: added
+          fail_on_error: false
+          github_token: ${{ github.token }}

@@ -6,20 +6,19 @@ help:
 
 format: ## Format
 	pinact run
-	npx prettier -w *.md
-	npx prettier -w .github/
-	npx prettier -w .yamllint.yaml
+	npx prettier -w .
 
 lint: lint-gha lint-renovate ## Lint
+	npx prettier -c .
 	yamllint .
 
 lint-gha:
 	npx prettier -c .github/
 	yamllint .github/
-	shellcheck .github/actions/*/scripts/*.sh
 	actionlint
 	zizmor .
 	ghalint run
+	shellcheck scripts/*.sh
 
 lint-renovate:
 	npx --package renovate@latest -- renovate-config-validator --strict
