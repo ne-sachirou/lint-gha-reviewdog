@@ -1,0 +1,104 @@
+Mar 25 15:51:44.905 INF download and unarchive the package program=aqua version=2.56.7 exe_name=zizmor package_name=zizmorcore/zizmor package_version=v1.23.1 registry=standard
+Mar 25 15:51:45.244 INF verify GitHub Artifact Attestations program=aqua version=2.56.7 exe_name=zizmor package_name=zizmorcore/zizmor package_version=v1.23.1 registry=standard
+🌈 zizmor v1.23.1
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/on-pull_request-workflow_run-completed.yaml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/on-pull_request.yaml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/wf-lint-gha.yaml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/wf-observe-gha.yaml
+[
+  {
+    "ident": "secrets-outside-env",
+    "desc": "secrets referenced without a dedicated environment",
+    "url": "https://docs.zizmor.sh/audits/#secrets-outside-env",
+    "determinations": {
+      "confidence": "High",
+      "severity": "Medium",
+      "persona": "Regular"
+    },
+    "locations": [
+      {
+        "symbolic": {
+          "key": {
+            "Local": {
+              "prefix": ".",
+              "given_path": "./.github/workflows/wf-observe-gha.yaml"
+            }
+          },
+          "annotation": "this job",
+          "route": {
+            "route": [
+              {
+                "Key": "jobs"
+              },
+              {
+                "Key": "otel-cicd-action"
+              }
+            ]
+          },
+          "feature_kind": "KeyOnly",
+          "kind": "Related"
+        },
+        "concrete": {
+          "location": {
+            "start_point": {
+              "row": 10,
+              "column": 2
+            },
+            "end_point": {
+              "row": 10,
+              "column": 18
+            },
+            "offset_span": {
+              "start": 125,
+              "end": 141
+            }
+          },
+          "feature": "otel-cicd-action",
+          "comments": []
+        }
+      },
+      {
+        "symbolic": {
+          "key": {
+            "Local": {
+              "prefix": ".",
+              "given_path": "./.github/workflows/wf-observe-gha.yaml"
+            }
+          },
+          "annotation": "secret is accessed outside of a dedicated environment",
+          "route": {
+            "route": [
+              {
+                "Key": "jobs"
+              },
+              {
+                "Key": "otel-cicd-action"
+              }
+            ]
+          },
+          "feature_kind": "Normal",
+          "kind": "Primary"
+        },
+        "concrete": {
+          "location": {
+            "start_point": {
+              "row": 33,
+              "column": 54
+            },
+            "end_point": {
+              "row": 33,
+              "column": 77
+            },
+            "offset_span": {
+              "start": 1098,
+              "end": 1121
+            }
+          },
+          "feature": "secrets.MACKEREL_APIKEY",
+          "comments": []
+        }
+      }
+    ],
+    "ignored": false
+  }
+]

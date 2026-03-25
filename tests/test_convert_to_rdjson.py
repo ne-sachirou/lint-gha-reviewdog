@@ -40,5 +40,39 @@ class LoadPayloadTest(unittest.TestCase):
             path.unlink()
 
 
+class ConvertZizmorTest(unittest.TestCase):
+    def test_converts_sample_finding_to_rdjson(self) -> None:
+        fixture = (
+            pathlib.Path(__file__).resolve().parent
+            / "fixtures"
+            / "zizmor-log-with-finding.txt"
+        )
+
+        payload = MODULE.convert_zizmor(fixture)
+
+        self.assertEqual(payload["source"]["name"], "zizmor")
+        self.assertEqual(len(payload["diagnostics"]), 1)
+        diagnostic = payload["diagnostics"][0]
+        self.assertEqual(
+            diagnostic["message"],
+            "secrets referenced without a dedicated environment: secret is accessed outside of a dedicated environment",
+        )
+        self.assertEqual(diagnostic["severity"], "WARNING")
+        self.assertEqual(
+            diagnostic["location"],
+            {
+                "path": ".github/workflows/wf-observe-gha.yaml",
+                "range": {"start": {"line": 34, "column": 55}},
+            },
+        )
+        self.assertEqual(
+            diagnostic["code"],
+            {
+                "value": "secrets-outside-env",
+                "url": "https://docs.zizmor.sh/audits/#secrets-outside-env",
+            },
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
