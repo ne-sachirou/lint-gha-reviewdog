@@ -48,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ne-sachirou/lint-gha-reviewdog@v1
+      - uses: ne-sachirou/lint-gha-reviewdog@v0
         with:
           github_token: ${{ github.token }}
 ```

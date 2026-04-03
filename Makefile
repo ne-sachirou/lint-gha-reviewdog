@@ -23,7 +23,7 @@ lint-gha:
 	ghalint run
 
 lint-renovate:
-	npx --package renovate@latest -- renovate-config-validator --strict
+	npx --package renovate -- renovate-config-validator --strict
 
 test: ## Test
 	python3 -m unittest tests/*.py
