@@ -73,19 +73,28 @@ runs:
         actionlint_status=0
         reviewdog_status=0
         findings=false
+        has_targets="$(
+          python3 "${GITHUB_ACTION_PATH}/scripts/find-lint-targets.py" \
+            "${GITHUB_WORKSPACE}/${WORKDIR}"
+        )"
         tmp_log="$(mktemp)"
         tmp_report="$(mktemp)"
         actual_reporter="${REPORTER}"
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
           actual_reporter="github-check"
         fi
-        if (
-          cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- actionlint -no-color -oneline
-        ) >"${tmp_log}" 2>&1; then
-          actionlint_status=0
+
+        if [ "${has_targets}" != "true" ]; then
+          printf '%s\n' "No GitHub Actions workflows or composite actions were found." > "${tmp_log}"
         else
-          actionlint_status=$?
+          if (
+            cd "${GITHUB_WORKSPACE}/${WORKDIR}"
+            aqua exec -- actionlint -no-color -oneline
+          ) >"${tmp_log}" 2>&1; then
+            actionlint_status=0
+          else
+            actionlint_status=$?
+          fi
         fi
 
         python3 "${GITHUB_ACTION_PATH}/scripts/convert-to-rdjson.py" \
@@ -146,6 +155,10 @@ runs:
         status=0
         reviewdog_status=0
         findings=false
+        has_targets="$(
+          python3 "${GITHUB_ACTION_PATH}/scripts/find-lint-targets.py" \
+            "${GITHUB_WORKSPACE}/${WORKDIR}"
+        )"
         tmp_log="$(mktemp)"
         tmp_summary_log="$(mktemp)"
         tmp_report="$(mktemp)"
@@ -153,13 +166,18 @@ runs:
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
           actual_reporter="github-check"
         fi
-        if (
-          cd "${GITHUB_WORKSPACE}/${WORKDIR}"
-          aqua exec -- zizmor --format json --color never --render-links never --no-progress .
-        ) >"${tmp_log}" 2>&1; then
-          status=0
+
+        if [ "${has_targets}" != "true" ]; then
+          printf '%s\n' "No GitHub Actions workflows or composite actions were found." > "${tmp_log}"
         else
-          status=$?
+          if (
+            cd "${GITHUB_WORKSPACE}/${WORKDIR}"
+            aqua exec -- zizmor --format json --color never --render-links never --no-progress .
+          ) >"${tmp_log}" 2>&1; then
+            status=0
+          else
+            status=$?
+          fi
         fi
 
         if (
