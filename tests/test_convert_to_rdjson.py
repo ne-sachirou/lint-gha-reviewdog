@@ -143,6 +143,27 @@ class CollectTargetsTest(unittest.TestCase):
 
             self.assertEqual(TARGET_MODULE.collect_targets(workspace), [])
 
+    def test_raises_when_workspace_does_not_exist(self) -> None:
+        workspace = (
+            pathlib.Path(tempfile.gettempdir()) / "missing-lint-targets-workspace"
+        )
+        if workspace.exists():
+            self.fail(f"temporary test path unexpectedly exists: {workspace}")
+
+        with self.assertRaises(FileNotFoundError):
+            TARGET_MODULE.collect_targets(workspace)
+
+    def test_raises_when_workspace_is_not_a_directory(self) -> None:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write("hello\n")
+            workspace = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(NotADirectoryError):
+                TARGET_MODULE.collect_targets(workspace)
+        finally:
+            workspace.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

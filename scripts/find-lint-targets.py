@@ -11,7 +11,15 @@ TARGET_PATTERNS = (
 )
 
 
+def validate_workspace(workspace: pathlib.Path) -> None:
+    if not workspace.exists():
+        raise FileNotFoundError(f"workspace does not exist: {workspace}")
+    if not workspace.is_dir():
+        raise NotADirectoryError(f"workspace is not a directory: {workspace}")
+
+
 def collect_targets(workspace: pathlib.Path) -> list[pathlib.Path]:
+    validate_workspace(workspace)
     targets: set[pathlib.Path] = set()
     for pattern in TARGET_PATTERNS:
         for path in workspace.glob(pattern):
@@ -22,7 +30,11 @@ def collect_targets(workspace: pathlib.Path) -> list[pathlib.Path]:
 
 def main() -> int:
     workspace = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path.cwd()
-    print("true" if collect_targets(workspace) else "false")
+    try:
+        print("true" if collect_targets(workspace) else "false")
+    except OSError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     return 0
 
 
