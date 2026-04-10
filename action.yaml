@@ -147,6 +147,7 @@ runs:
         reviewdog_status=0
         findings=false
         tmp_log="$(mktemp)"
+        tmp_summary_log="$(mktemp)"
         tmp_report="$(mktemp)"
         actual_reporter="${REPORTER}"
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${actual_reporter}" = "github-pr-review" ]; then
@@ -159,6 +160,15 @@ runs:
           status=0
         else
           status=$?
+        fi
+
+        if (
+          cd "${GITHUB_WORKSPACE}/${WORKDIR}"
+          aqua exec -- zizmor --color never --render-links never --no-progress .
+        ) >"${tmp_summary_log}" 2>&1; then
+          :
+        else
+          :
         fi
 
         if [ "${status}" -ge 11 ] && [ "${status}" -le 14 ]; then
@@ -185,8 +195,8 @@ runs:
         /bin/bash "${GITHUB_ACTION_PATH}/scripts/write-summary.sh" \
           "zizmor" \
           "${findings}" \
-          "aqua exec -- zizmor --format json --color never --render-links never --no-progress ." \
-          "${tmp_log}"
+          "aqua exec -- zizmor --color never --render-links never --no-progress ." \
+          "${tmp_summary_log}"
 
         {
           echo "has_findings=${findings}"
