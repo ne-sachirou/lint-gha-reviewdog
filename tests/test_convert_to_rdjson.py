@@ -6,11 +6,21 @@ import unittest
 MODULE_PATH = (
     pathlib.Path(__file__).resolve().parent.parent / "scripts" / "convert-to-rdjson.py"
 )
+TARGET_MODULE_PATH = (
+    pathlib.Path(__file__).resolve().parent.parent / "scripts" / "find-lint-targets.py"
+)
 SPEC = importlib.util.spec_from_file_location("convert_to_rdjson", MODULE_PATH)
 assert SPEC is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+TARGET_SPEC = importlib.util.spec_from_file_location(
+    "find_lint_targets", TARGET_MODULE_PATH
+)
+assert TARGET_SPEC is not None
+TARGET_MODULE = importlib.util.module_from_spec(TARGET_SPEC)
+assert TARGET_SPEC.loader is not None
+TARGET_SPEC.loader.exec_module(TARGET_MODULE)
 
 
 class LoadPayloadTest(unittest.TestCase):
@@ -106,6 +116,32 @@ class ConvertActionlintTest(unittest.TestCase):
                 "url": "",
             },
         )
+
+
+class CollectTargetsTest(unittest.TestCase):
+    def test_detects_workflow_and_action_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace = pathlib.Path(tmp_dir)
+            workflow = workspace / ".github" / "workflows" / "ci.yaml"
+            action = workspace / ".github" / "actions" / "lint" / "action.yml"
+            workflow.parent.mkdir(parents=True)
+            action.parent.mkdir(parents=True)
+            workflow.write_text("name: ci\n", encoding="utf-8")
+            action.write_text(
+                "name: lint\nruns:\n  using: composite\n  steps: []\n", encoding="utf-8"
+            )
+
+            self.assertEqual(
+                TARGET_MODULE.collect_targets(workspace),
+                [action, workflow],
+            )
+
+    def test_ignores_workspace_without_github_actions_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            workspace = pathlib.Path(tmp_dir)
+            (workspace / "README.md").write_text("hello\n", encoding="utf-8")
+
+            self.assertEqual(TARGET_MODULE.collect_targets(workspace), [])
 
 
 if __name__ == "__main__":
