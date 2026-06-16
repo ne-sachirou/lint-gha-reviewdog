@@ -3,7 +3,7 @@
   extends: [
     ":configMigration",
     "config:recommended",
-    "github>aquaproj/aqua-renovate-config#2.12.1",
+    "github>aquaproj/aqua-renovate-config#2.13.0",
   ],
   dependencyDashboard: true,
   labels: ["dependencies"],
