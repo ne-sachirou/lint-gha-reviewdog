@@ -4,7 +4,7 @@ registries:
     ref: v4.487.0
 
 packages:
-  - name: reviewdog/reviewdog@v0.21.0
+  - name: reviewdog/reviewdog@v0.21.1
   - name: rhysd/actionlint@v1.7.12
   - name: suzuki-shunsuke/ghalint@v1.5.6
   - name: zizmorcore/zizmor@v1.30.1
