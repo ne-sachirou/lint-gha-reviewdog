@@ -3,3 +3,5 @@ paths:
   ".github/workflows/**/*.{yml,yaml}":
     ignore:
       - '^specifying action "\$/" in invalid format because ref is missing\.'
+      # actionlint v1.7.12 does not yet recognize this GitHub-hosted runner.
+      - '^label "ubuntu-26\.04" is unknown\.'
