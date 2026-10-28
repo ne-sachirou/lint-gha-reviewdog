@@ -1,10 +1,3 @@
-Mar 25 15:51:44.905 INF download and unarchive the package program=aqua version=2.56.7 exe_name=zizmor package_name=zizmorcore/zizmor package_version=v1.23.1 registry=standard
-Mar 25 15:51:45.244 INF verify GitHub Artifact Attestations program=aqua version=2.56.7 exe_name=zizmor package_name=zizmorcore/zizmor package_version=v1.23.1 registry=standard
-🌈 zizmor v1.23.1
- INFO audit: zizmor: 🌈 completed ./.github/workflows/on-pull_request-workflow_run-completed.yaml
- INFO audit: zizmor: 🌈 completed ./.github/workflows/on-pull_request.yaml
- INFO audit: zizmor: 🌈 completed ./.github/workflows/wf-lint-gha.yaml
- INFO audit: zizmor: 🌈 completed ./.github/workflows/wf-observe-gha.yaml
 [
   {
     "ident": "secrets-outside-env",
