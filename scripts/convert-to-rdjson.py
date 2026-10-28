@@ -33,18 +33,14 @@ def normalize_path(path: str) -> str:
     return path
 
 
-def load_payload(path: pathlib.Path) -> Any:
-    raw = path.read_text(encoding="utf-8")
-    decoder = json.JSONDecoder()
-    starts = [idx for idx, char in enumerate(raw) if char in "[{"]
-    for start in starts:
-        try:
-            payload, _ = decoder.raw_decode(raw[start:])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, (list, dict)):
-            return payload
-    raise ValueError("JSON payload not found")
+def load_payload(path: pathlib.Path) -> list[Any]:
+    # The input must be exactly the zizmor JSON document (stdout only). Never
+    # scan for JSON inside a mixed log: other output can echo file names from
+    # the linted tree, which would let them stand in for the real findings.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError("zizmor JSON payload must be a top-level list")
+    return payload
 
 
 def convert_zizmor(path: pathlib.Path) -> dict[str, Any]:

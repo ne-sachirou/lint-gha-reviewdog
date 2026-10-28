@@ -25,8 +25,8 @@ TARGET_SPEC.loader.exec_module(TARGET_MODULE)
 
 
 class LoadPayloadTest(unittest.TestCase):
-    def test_skips_ansi_prefix_before_json_payload(self) -> None:
-        content = '\x1b[2mnote\x1b[0m\n[{"ident":"demo","locations":[]}]'
+    def test_loads_top_level_list(self) -> None:
+        content = '[{"ident":"demo","locations":[]}]\n'
 
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             handle.write(content)
@@ -36,6 +36,34 @@ class LoadPayloadTest(unittest.TestCase):
             self.assertEqual(
                 MODULE.load_payload(path), [{"ident": "demo", "locations": []}]
             )
+        finally:
+            path.unlink()
+
+    def test_rejects_json_fragment_embedded_in_log_text(self) -> None:
+        content = (
+            " INFO audit: zizmor: completed ./.github/workflows/"
+            '[{"ident":"forged","locations":[]}].yaml\n'
+            '[{"ident":"genuine","locations":[]}]\n'
+        )
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write(content)
+            path = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(ValueError):
+                MODULE.load_payload(path)
+        finally:
+            path.unlink()
+
+    def test_rejects_top_level_object(self) -> None:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write('{"ident":"demo","locations":[]}')
+            path = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(ValueError):
+                MODULE.load_payload(path)
         finally:
             path.unlink()
 
