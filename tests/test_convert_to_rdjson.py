@@ -1,6 +1,7 @@
 import importlib.util
 import pathlib
 import tempfile
+import time
 import unittest
 
 MODULE_PATH = (
@@ -116,6 +117,61 @@ class ConvertActionlintTest(unittest.TestCase):
                 "url": "",
             },
         )
+
+
+class ConvertActionlintLineTest(unittest.TestCase):
+    def convert_line(self, line: str) -> list[dict]:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write(line + "\n")
+            path = pathlib.Path(handle.name)
+
+        try:
+            return MODULE.convert_actionlint(path)["diagnostics"]
+        finally:
+            path.unlink()
+
+    def test_message_without_code_uses_default_code(self) -> None:
+        diagnostics = self.convert_line("./ci.yaml:3:4: something is wrong")
+
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0]["message"], "something is wrong")
+        self.assertEqual(
+            diagnostics[0]["location"],
+            {"path": "ci.yaml", "range": {"start": {"line": 3, "column": 4}}},
+        )
+        self.assertEqual(diagnostics[0]["code"]["value"], "actionlint")
+
+    def test_splits_only_the_trailing_code(self) -> None:
+        diagnostics = self.convert_line("ci.yaml:3:4: bad [x] key [y] [syntax-check]")
+
+        self.assertEqual(diagnostics[0]["message"], "bad [x] key [y]")
+        self.assertEqual(diagnostics[0]["code"]["value"], "syntax-check")
+
+    def test_bracket_without_leading_whitespace_is_part_of_message(self) -> None:
+        diagnostics = self.convert_line("ci.yaml:3:4: key[0] is bad")
+        self.assertEqual(diagnostics[0]["message"], "key[0] is bad")
+        self.assertEqual(diagnostics[0]["code"]["value"], "actionlint")
+
+        diagnostics = self.convert_line("ci.yaml:3:4: key[syntax-check]")
+        self.assertEqual(diagnostics[0]["message"], "key[syntax-check]")
+        self.assertEqual(diagnostics[0]["code"]["value"], "actionlint")
+
+    def test_long_whitespace_and_bracket_runs_are_linear(self) -> None:
+        size = 200_000
+        lines = (
+            'ci.yaml:1:2: unexpected key "a' + " " * size + 'b" for step',
+            "ci.yaml:1:2: message" + " " * size + "[",
+            "ci.yaml:1:2: message" + " [" * size + "]",
+            "ci.yaml:1:2: message" + " [a" * size,
+        )
+
+        for line in lines:
+            started = time.monotonic()
+            diagnostics = self.convert_line(line)
+            elapsed = time.monotonic() - started
+
+            self.assertEqual(len(diagnostics), 1)
+            self.assertLess(elapsed, 5.0)
 
 
 class CollectTargetsTest(unittest.TestCase):

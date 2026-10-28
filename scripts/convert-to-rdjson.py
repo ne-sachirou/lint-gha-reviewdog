@@ -92,20 +92,43 @@ def convert_zizmor(path: pathlib.Path) -> dict[str, Any]:
     return build_rdjson("zizmor", diagnostics)
 
 
-ACTIONLINT_LINE_RE = re.compile(
-    r"^(?P<path>.+?):(?P<line>\d+):(?P<column>\d+):\s+(?P<message>.+?)(?:\s+\[(?P<code>[^\]]+)\])?$"
-)
+ACTIONLINT_PREFIX_RE = re.compile(r"^(?P<path>.+?):(?P<line>\d+):(?P<column>\d+):\s+")
+
+
+def split_actionlint_code(text: str) -> tuple[str, str | None]:
+    """Split a trailing " [code]" off an actionlint message.
+
+    The message can quote workflow-controlled text, so this uses plain string
+    scans: a regex with a lazy message followed by an optional group backtracks
+    quadratically on long whitespace or "[" runs.
+    """
+    if not text.endswith("]"):
+        return text, None
+    end = len(text) - 1
+    # The code cannot contain "]", so its "[" lies after the previous "]" and
+    # leaves at least one character before the final "]".
+    start = text.rfind("]", 0, end) + 1
+    open_idx = text.find("[", start, end - 1)
+    while open_idx != -1:
+        if open_idx > 0 and text[open_idx - 1].isspace():
+            code_start = open_idx + 1
+            return text[:open_idx].rstrip(), text[code_start:end]
+        open_idx = text.find("[", open_idx + 1, end - 1)
+    return text, None
 
 
 def convert_actionlint(path: pathlib.Path) -> dict[str, Any]:
     diagnostics = []
     for line in path.read_text(encoding="utf-8").splitlines():
-        match = ACTIONLINT_LINE_RE.match(line.strip())
+        stripped = line.strip()
+        match = ACTIONLINT_PREFIX_RE.match(stripped)
         if match is None:
             continue
+        text_start = match.end()
+        message, code = split_actionlint_code(stripped[text_start:])
         diagnostics.append(
             {
-                "message": match.group("message"),
+                "message": message,
                 "severity": "ERROR",
                 "location": make_location(
                     normalize_path(match.group("path")),
@@ -113,7 +136,7 @@ def convert_actionlint(path: pathlib.Path) -> dict[str, Any]:
                     int(match.group("column")),
                 ),
                 "code": {
-                    "value": match.group("code") or "actionlint",
+                    "value": code or "actionlint",
                     "url": "",
                 },
             }
