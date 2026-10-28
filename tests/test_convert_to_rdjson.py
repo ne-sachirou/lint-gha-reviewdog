@@ -24,8 +24,8 @@ TARGET_SPEC.loader.exec_module(TARGET_MODULE)
 
 
 class LoadPayloadTest(unittest.TestCase):
-    def test_skips_ansi_prefix_before_json_payload(self) -> None:
-        content = '\x1b[2mnote\x1b[0m\n[{"ident":"demo","locations":[]}]'
+    def test_loads_json_payload(self) -> None:
+        content = '[{"ident":"demo","locations":[]}]\n'
 
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             handle.write(content)
@@ -35,6 +35,46 @@ class LoadPayloadTest(unittest.TestCase):
             self.assertEqual(
                 MODULE.load_payload(path), [{"ident": "demo", "locations": []}]
             )
+        finally:
+            path.unlink()
+
+    def test_rejects_json_fragment_before_json_payload(self) -> None:
+        content = (
+            ' INFO audit: zizmor: completed ./.github/workflows/[{"ident":"forged"}].yaml\n'
+            '[{"ident":"demo","locations":[]}]\n'
+        )
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write(content)
+            path = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(ValueError):
+                MODULE.load_payload(path)
+        finally:
+            path.unlink()
+
+    def test_rejects_text_after_json_payload(self) -> None:
+        content = '[{"ident":"demo","locations":[]}]\ntrailing [{"ident":"forged"}]\n'
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write(content)
+            path = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(ValueError):
+                MODULE.load_payload(path)
+        finally:
+            path.unlink()
+
+    def test_rejects_scalar_json_payload(self) -> None:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            handle.write('"text"')
+            path = pathlib.Path(handle.name)
+
+        try:
+            with self.assertRaises(ValueError):
+                MODULE.load_payload(path)
         finally:
             path.unlink()
 

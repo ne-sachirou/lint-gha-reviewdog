@@ -160,6 +160,7 @@ runs:
             "${GITHUB_WORKSPACE}/${WORKDIR}"
         )"
         tmp_log="$(mktemp)"
+        tmp_stderr_log="$(mktemp)"
         tmp_summary_log="$(mktemp)"
         tmp_report="$(mktemp)"
         actual_reporter="${REPORTER}"
@@ -173,7 +174,7 @@ runs:
           if (
             cd "${GITHUB_WORKSPACE}/${WORKDIR}"
             aqua exec -- zizmor --format json --color never --render-links never --no-progress .
-          ) >"${tmp_log}" 2>&1; then
+          ) >"${tmp_log}" 2>"${tmp_stderr_log}"; then
             status=0
           else
             status=$?

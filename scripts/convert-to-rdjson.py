@@ -34,17 +34,13 @@ def normalize_path(path: str) -> str:
 
 
 def load_payload(path: pathlib.Path) -> Any:
-    raw = path.read_text(encoding="utf-8")
-    decoder = json.JSONDecoder()
-    starts = [idx for idx, char in enumerate(raw) if char in "[{"]
-    for start in starts:
-        try:
-            payload, _ = decoder.raw_decode(raw[start:])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, (list, dict)):
-            return payload
-    raise ValueError("JSON payload not found")
+    # The input must be exactly one JSON document (the tool's stdout). Do not
+    # scan for an embedded fragment: surrounding text, such as log lines that
+    # echo attacker-controlled file names, must never be taken as the payload.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, (list, dict)):
+        raise ValueError("JSON payload not found")
+    return payload
 
 
 def convert_zizmor(path: pathlib.Path) -> dict[str, Any]:
