@@ -107,7 +107,7 @@ runs:
           detect_actionlint_diagnostics+='payload = json.load(open(sys.argv[1], encoding="utf-8")); '
           detect_actionlint_diagnostics+='print("1" if payload.get("diagnostics") else "0")'
           has_actionlint_diagnostics="$(
-            python3 -c "${detect_actionlint_diagnostics}" "${tmp_report}"
+            python3 -I -c "${detect_actionlint_diagnostics}" "${tmp_report}"
           )"
         else
           has_actionlint_diagnostics=0
