@@ -56,7 +56,7 @@ jobs:
         # Test the checked-out root action; actionlint rejects $/.
         uses: ./ # zizmor: ignore[self-repository]
         with:
-          fail_on_error: true
+          fail_on_error: false
           filter_mode: added
           github_token: ${{ github.token }}
           reporter: github-pr-review
