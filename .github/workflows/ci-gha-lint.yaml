@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - id: lint
-        uses: $/
+        uses: ./
         with:
           toolset: all
           reporter: github-pr-review
@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - id: lint
-        uses: $/
+        uses: ./
         with:
           fail_on_error: true
           filter_mode: added
