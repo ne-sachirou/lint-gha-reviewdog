@@ -6,5 +6,5 @@ registries:
 packages:
   - name: reviewdog/reviewdog@v0.21.2
   - name: rhysd/actionlint@v1.7.12
-  - name: suzuki-shunsuke/ghalint@v1.5.6
+  - name: suzuki-shunsuke/ghalint@v1.5.7
   - name: zizmorcore/zizmor@v1.31.1
