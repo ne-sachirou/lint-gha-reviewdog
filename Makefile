@@ -8,7 +8,7 @@ format: ## Format
 	npx prettier -w .
 	black .
 	pinact run
-	zizmor --fix=safe . || true
+	aqua exec -- zizmor --fix=safe . || true
 
 lint: lint-gha lint-renovate ## Lint
 	npx prettier -c .
@@ -19,9 +19,9 @@ lint: lint-gha lint-renovate ## Lint
 lint-gha:
 	npx prettier -c .github/workflows
 	yamllint .github/workflows
-	actionlint
-	zizmor .
-	ghalint run
+	aqua exec -- actionlint
+	aqua exec -- zizmor .
+	aqua exec -- ghalint run
 
 lint-renovate:
 	npx --package renovate -- renovate-config-validator --strict
