@@ -1,10 +1,10 @@
 ---
 registries:
   - type: standard
-    ref: v4.487.0
+    ref: v4.579.0
 
 packages:
   - name: reviewdog/reviewdog@v0.21.2
-  - name: rhysd/actionlint@v1.7.12
+  - name: kjanat/actionlint@v1.17.0
   - name: suzuki-shunsuke/ghalint@v1.5.7
   - name: zizmorcore/zizmor@v1.31.1

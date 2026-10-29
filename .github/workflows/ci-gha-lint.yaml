@@ -54,7 +54,7 @@ jobs:
       - id: lint
         uses: $/
         with:
-          fail_on_error: false
+          fail_on_error: true
           filter_mode: added
           github_token: ${{ github.token }}
           reporter: github-pr-review
