@@ -7,4 +7,4 @@ packages:
   - name: reviewdog/reviewdog@v0.21.2
   - name: kjanat/actionlint@v1.17.0
   - name: suzuki-shunsuke/ghalint@v1.5.7
-  - name: zizmorcore/zizmor@v1.31.1
+  - name: zizmorcore/zizmor@v1.32.0
