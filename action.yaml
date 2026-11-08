@@ -55,7 +55,7 @@ runs:
     - name: Install aqua
       uses: aquaproj/aqua-installer@611554c6f0137ba41c8dd15aca8bee82504ea461 # v4.1.1
       with:
-        aqua_version: v2.65.2
+        aqua_version: v2.66.1
         working_directory: ${{ github.action_path }}
 
     - id: run_actionlint
