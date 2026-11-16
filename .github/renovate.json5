@@ -1,16 +1,23 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    ":configMigration",
-    "config:recommended",
-    "github>aquaproj/aqua-renovate-config#2.14.0",
+    ':configMigration',
+    'config:recommended',
+    'github>aquaproj/aqua-renovate-config#2.14.0',
   ],
-  dependencyDashboard: true,
-  labels: ["dependencies"],
-  minimumReleaseAge: "3 days",
-  schedule: "after 10am and before 7pm every weekday",
-  timezone: "Asia/Tokyo",
+  dependencyDashboard: {
+    enabled: true,
+  },
+  labels: [
+    'dependencies',
+  ],
+  minimumReleaseAge: '3 days',
+  schedule: 'after 10am and before 7pm every weekday',
+  timezone: 'Asia/Tokyo',
   vulnerabilityAlerts: {
-    labels: ["dependencies", "security"],
+    labels: [
+      'dependencies',
+      'security',
+    ],
   },
 }
