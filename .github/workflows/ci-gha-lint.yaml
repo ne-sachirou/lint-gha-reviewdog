@@ -31,8 +31,8 @@ jobs:
           persist-credentials: false
 
       - id: lint
-        # Test the checked-out root action; actionlint rejects $/.
-        uses: ./ # zizmor: ignore[self-repository]
+        # Test the root action at the workflow's commit.
+        uses: $/.
         with:
           toolset: all
           reporter: github-pr-review
@@ -53,8 +53,8 @@ jobs:
           persist-credentials: false
 
       - id: lint
-        # Test the checked-out root action; actionlint rejects $/.
-        uses: ./ # zizmor: ignore[self-repository]
+        # Test the root action at the workflow's commit.
+        uses: $/.
         with:
           fail_on_error: false
           filter_mode: added
