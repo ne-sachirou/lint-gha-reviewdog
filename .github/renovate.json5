@@ -5,7 +5,9 @@
     "config:recommended",
     "github>aquaproj/aqua-renovate-config#2.14.0",
   ],
-  dependencyDashboard: true,
+  dependencyDashboard: {
+    enabled: true,
+  },
   labels: ["dependencies"],
   minimumReleaseAge: "3 days",
   schedule: "after 10am and before 7pm every weekday",
