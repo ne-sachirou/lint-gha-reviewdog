@@ -26,13 +26,13 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - id: lint
-        # Test the checked-out root action; actionlint rejects $/.
-        uses: ./ # zizmor: ignore[self-repository]
+        # Test the root action at the workflow's commit.
+        uses: $/.
         with:
           toolset: all
           reporter: github-pr-review
@@ -48,13 +48,13 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - id: lint
-        # Test the checked-out root action; actionlint rejects $/.
-        uses: ./ # zizmor: ignore[self-repository]
+        # Test the root action at the workflow's commit.
+        uses: $/.
         with:
           fail_on_error: false
           filter_mode: added

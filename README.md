@@ -116,3 +116,5 @@ scripts/
 - The public API is the root `action.yaml`
 - This repository intentionally avoids `pull_request_target`
 - Tool versions are pinned in `aqua.yaml`
+- The smoke workflow uses `uses: $/.` to lock the root action's dependencies in `.github/workflows/actions.lock`.
+- The `aqua-installer` entry uses the SHA from `action.yaml` as its key so that GitHub Actions can resolve it. `gh actions-lock` currently rewrites that reference to a tag; retain the SHA in both the public action and its lockfile entry until the generator supports this case.

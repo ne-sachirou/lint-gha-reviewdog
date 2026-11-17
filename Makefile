@@ -7,7 +7,6 @@ help:
 format: ## Format
 	npx prettier -w .
 	black .
-	pinact run
 	aqua exec -- zizmor --fix=safe . || true
 
 lint: lint-gha lint-renovate ## Lint
